@@ -1,0 +1,11 @@
+{
+    "python.pythonPath": "E:\\anaconda\\envs\\illustEnv\\python.exe",
+    "workbench.colorCustomizations": {
+        "titleBar.activeBackground": "#004fae",
+        "titleBar.activeForeground": "#c3c3c3",
+        "activityBar.background": "#0c416f",
+        "activityBar.foreground": "#c3c3c3",
+        "statusBar.background": "#3e0054",
+        "statusBar.foreground": "#c3c3c3"
+    }
+}
