@@ -37,13 +37,13 @@ class FReLU(torch.nn.Module):
 
 class Base_Model(torch.nn.Module):
 
-    def __init__(self):
+    def __init__(self, input_ch, output_ch):
         super(Base_Model, self).__init__()
-        self.activation = {None   : torch.nn.Identity(), 
+        self.activation = {None   : torch.nn.Identity(),
                            'relu' : torch.nn.ReLU(),
                            'leaky': torch.nn.LeakyReLU(),
-                           'swish': Swish()}
-                           # 'frelu': FReLU}
+                           'swish': Swish(),
+                           'frelu': FReLU(input_ch, output_ch)}
 
 
 class Conv_Block(torch.nn.Module):
@@ -179,3 +179,18 @@ class DW_PT_Conv(torch.nn.Module):
         x = self.point(x)
         x = self._activation_fn(x)
         return x
+
+
+class EDSR_Block(Base_Model):
+
+    def __init__(self, input_ch, output_ch, feature, **kwargs):
+        super(Base_Model, self).__init__()
+        self.activation_fn = kwargs('activation')
+        self.conv1 = torch.nn.Conv2d(input_ch, feature, kernel_size=3, stride=1, padding=1)
+        self.conv2 = torch.nn.Conv2d(feature, output_ch, kernel_size=3, stride=1, padding=1)
+
+    def forward(self, x):
+        x_in = x
+        x_in = self.activation[self.activation_fn](self.conv1(x_in))
+        x_in = self.conv2(x_in)
+        return x + x_in
