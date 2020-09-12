@@ -9,7 +9,7 @@ from .layers import Base_Model
 class SRCNN(Base_Model):
 
     def __init__(self, input_ch, output_ch, kernel_size=3, stride=1, features=[32, 64, 64], **kwargs):
-        super(SRCNN, self).__init__()
+        super(SRCNN, self).__init__(input_ch, output_ch)
         self.activation_name = kwargs.get('activation')
         self.scale = kwargs.get('scale', 2)
         self.features = [input_ch] + features  # + [output_ch]
