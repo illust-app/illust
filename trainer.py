@@ -46,7 +46,7 @@ class Trainer(object):
         elif isinstance(init_epoch, int):
             assert 'Please enter int to init_epochs'
 
-        if self.colab_flag is True:
+        if self.colab_flag is not None:
             columns = 200
         else:
             _, columns = os.popen('stty size', 'r').read().split()
