@@ -7,9 +7,10 @@ from torchsummary import summary
 from data_loader import SRDataset
 from model.SRCNN import SRCNN
 from trainer import Trainer
+from utils import Draw_Output, ModelCheckPoint
 
 
-batch_size = 5
+batch_size = 64
 epochs = 5
 
 
@@ -32,5 +33,8 @@ if __name__ == '__main__':
     criterion = torch.nn.MSELoss().to(device)
     params = list(model.parameters())
     optim = torch.optim.Adam(params=params, lr=1e-3)
-    trainer = Trainer(model, criterion, optim, shape=(5, 3, 64, 64), colab_flas=True)
+    ckpt_callbacks = ModelCheckPoint('ckpt', 'sr', mkdir=True, partience=1, verbose=True)
+    draw_callbacks = Draw_Output(os.path.join(data_path, 'draw_patch'), 'show_output', shape=(256, 256))
+    callbacks = [ckpt_callbacks, draw_callbacks]
+    trainer = Trainer(model, criterion, optim, shape=(batch_size, 3, 64, 64), colab_flas=False, callbacks=callbacks)
     trainer.train(epochs, train_dataloader, test_dataloader)

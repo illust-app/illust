@@ -142,22 +142,14 @@ class RandomHorizontalFlip(object):
 
 class ModelCheckPoint(object):
 
-    def __init__(self, checkpoint_path, model_name, mkdir=False, partience=1, verbose=True, *args, **kwargs):
+    def __init__(self, checkpoint_path, model_name, *args, mkdir=False, partience=1, verbose=True, **kwargs):
         self.checkpoint_path = checkpoint_path
         self.model_name = model_name
         self.partience = partience
         self.verbose = verbose
-        if mkdir is True:
-            if os.path.exists(self.checkpoint_path):
-                shutil.rmtree(self.checkpoint_path)
-            os.makedirs(self.checkpoint_path)
-        # self.colab2drive_idx = 0
-        # if 'colab2drive' in kwargs.keys():
-        #     self.colab2drive = kwargs['colab2drive']
-        #     self.colab2drive_path = kwargs['colab2drive_path']
-        #     self.colab2drive_flag = True
-        # else:
-        #     self.colab2drive_flag = False
+        if mkdir is True and os.path.exists(self.checkpoint_path):
+            shutil.rmtree(self.checkpoint_path)
+        os.makedirs(self.checkpoint_path, exist_ok=True)
 
     def callback(self, model, epoch, *args, **kwargs):
         if 'loss' not in kwargs.keys() and 'val_loss' not in kwargs.keys():
@@ -165,7 +157,8 @@ class ModelCheckPoint(object):
         loss = kwargs['loss']
         val_loss = kwargs['val_loss']
         checkpoint_name = os.path.join(self.checkpoint_path, self.model_name +
-                                       f'_epoch_{epoch:05d}_loss_{loss:.5f}_valloss_{val_loss:.5f}.pth')
+                                       f'_epoch_{epoch:05d}_loss_{loss:.5f}_valloss_{val_loss:.5f}.tar')
+        print(checkpoint_name)
         if epoch % self.partience == 0:
             torch.save({'model_state_dict': model.state_dict(),
                         'epoch': epoch,
@@ -179,7 +172,7 @@ class ModelCheckPoint(object):
 
 class Draw_Output(object):
 
-    def __init__(self, img_path, output_data, save_path='output', verbose=False, nrow=8, **kwargs):
+    def __init__(self, img_path, save_path='output', verbose=False, nrow=8, **kwargs):
         '''
         Parameters
         ---
@@ -193,8 +186,9 @@ class Draw_Output(object):
           verbose
          '''
         self.img_path = img_path
-        self.output_data = output_data
-        self.data_num = len(output_data)
+        self.output_data = os.listdir(img_path)
+        self.output_data.sort()
+        self.data_num = len(self.output_data)
         self.save_path = save_path
         self.verbose = verbose
         self.shape = kwargs.get('shape', (256, 256))

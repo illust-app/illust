@@ -91,10 +91,10 @@ class Trainer(object):
                     torch.cuda.empty_cache()
             if self.callbacks:
                 for callback in self.callbacks:
-                    callback.callback(self.model, epoch, loss=train_loss,
-                            val_loss=val_loss, save=True, device=device, optim=self.optimizer)
-                    if self.scheduler is not None:
-                        self.scheduler.step()
+                    callback.callback(self.model, epoch, loss=sum(train_loss) / len(train_loss),
+                            val_loss=sum(val_loss) / len(val_loss), save=True, device=device, optim=self.optimizer)
+            if self.scheduler is not None:
+                self.scheduler.step()
             print('-' * int(columns))
 
         return self
