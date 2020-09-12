@@ -193,6 +193,8 @@ class Draw_Output(object):
         self.verbose = verbose
         self.shape = kwargs.get('shape', (256, 256))
         self.scale = kwargs.get('scale', 2)
+        self.zeros = torch.zeros((3, self.shape[0], self.shape[1]))
+        self.ones = torch.ones((3, self.shape[0], self.shape[1]))
         self.label_transform = torchvision.transforms.Compose([
             torchvision.transforms.CenterCrop(self.shape),
             torchvision.transforms.ToTensor()
@@ -233,6 +235,8 @@ class Draw_Output(object):
                 img = self.input_transform(img).unsqueeze(0).to(device)
                 with torch.no_grad():
                     output = model(img).squeeze().to('cpu')
+                output_imgs = torch.max(output_imgs, self.zeros)
+                output_imgs = torch.min(output_imgs, self.ones)
                 output_imgs.append(output)
             output_imgs = torch.cat(output_imgs).reshape(len(output_imgs), *output_imgs[0].shape)
             if self.verbose is True:
