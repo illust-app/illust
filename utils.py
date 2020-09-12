@@ -158,7 +158,6 @@ class ModelCheckPoint(object):
         val_loss = kwargs['val_loss']
         checkpoint_name = os.path.join(self.checkpoint_path, self.model_name +
                                        f'_epoch_{epoch:05d}_loss_{loss:.5f}_valloss_{val_loss:.5f}.tar')
-        print(checkpoint_name)
         if epoch % self.partience == 0:
             torch.save({'model_state_dict': model.state_dict(),
                         'epoch': epoch,
@@ -172,7 +171,7 @@ class ModelCheckPoint(object):
 
 class Draw_Output(object):
 
-    def __init__(self, img_path, save_path='output', verbose=False, nrow=8, **kwargs):
+    def __init__(self, img_path, save_path='output', partience=1, verbose=False, nrow=8, **kwargs):
         '''
         Parameters
         ---
@@ -190,10 +189,17 @@ class Draw_Output(object):
         self.output_data.sort()
         self.data_num = len(self.output_data)
         self.save_path = save_path
+        self.partience = partience
         self.verbose = verbose
         self.shape = kwargs.get('shape', (256, 256))
+        self.scale = kwargs.get('scale', 2)
+        self.label_transform = torchvision.transforms.Compose([
+            torchvision.transforms.CenterCrop(self.shape),
+            torchvision.transforms.ToTensor()
+        ])
         self.input_transform = torchvision.transforms.Compose([
-            torchvision.transforms.Resize((self.shape)),
+            torchvision.transforms.CenterCrop(self.shape),
+            torchvision.transforms.Resize((self.shape[0] // self.scale, self.shape[1] // self.scale)),
             torchvision.transforms.ToTensor()
         ])
         self.output_transform = torchvision.transforms.ToPILImage()
@@ -215,7 +221,7 @@ class Draw_Output(object):
         # for data in self.output_data:
         #     label = self.input_transform(Image.open(os.path.join(self.img_path, data)).convert('RGB'))
         #     labels.append(label)
-        labels = [self.input_transform(Image.open(os.path.join(self.img_path, data)).convert('RGB')) for data in self.output_data]
+        labels = [self.label_transform(Image.open(os.path.join(self.img_path, data)).convert('RGB')) for data in self.output_data]
         self.labels = torch.cat(labels).reshape(len(labels), *labels[0].shape)
         labels_np = torchvision.utils.make_grid(self.labels, nrow=nrow, padding=10)
         labels_np = labels_np.numpy()
@@ -225,35 +231,33 @@ class Draw_Output(object):
 
 
     def callback(self, model, epoch, *args, **kwargs):
-        save = kwargs.get('save')
-        if 'save' is None:
-            assert 'None save mode'
-        device = kwargs['device']
-        self.epoch_save_path = os.path.join(self.save_path, f'epoch{epoch}')
-        os.makedirs(self.epoch_save_path, exist_ok=True)
-        output_imgs = []
-        # encoder.eval()
-        # decoder.eval()
-        with torch.no_grad():
+        if epoch % self.partience == 0:
+            save = kwargs.get('save')
+            if 'save' is None:
+                assert 'None save mode'
+            device = kwargs['device']
+            # self.epoch_save_path = os.path.join(self.save_path, f'epoch{epoch}')
+            input_imgs = []
+            output_imgs = []
             for i, data in enumerate(self.output_data):
-                img = self.input_transform(Image.open(os.path.join(self.img_path, data)).convert('L')).unsqueeze(0).to(device)
-                output = model(img).squeeze().to('cpu')
+                img = Image.open(os.path.join(self.img_path, data)).convert('RGB')
+                img = self.input_transform(img).unsqueeze(0).to(device)
+                with torch.no_grad():
+                    output = model(img).squeeze().to('cpu')
+                input_imgs.append(img)
                 output_imgs.append(output)
-        output_imgs = torch.cat(output_imgs).reshape(len(output_imgs), *output_imgs[0].shape)
-        if self.verbose is True:
-            self.__show_output_img_list(output_imgs)
-            # self.__show_output_img_list(self.labels)
-        if save is True:
-            torchvision.utils.save_image(output_imgs, os.path.join(self.save_path, f'all_imgs/all_imgs_{epoch}.jpg'), nrow=self.nrow, padding=10)
-        del output_imgs
-        return self
-
-    def __draw_output_label(self, output, label, data):
-        output = torch.cat((label, output), dim=2)
-        output = self.output_transform(output)
-        output.save(os.path.join(self.epoch_save_path, data))
-        if self.verbose is True:
-            print(f'\rDraw Output {data}', end='')
+            input_imgs = torch.cat(input_imgs).reshape(len(input_imgs), *input_imgs[0].shape).squeeze().to('cpu')
+            print(input_imgs.shape)
+            output_imgs = torch.cat(output_imgs).reshape(len(output_imgs), *output_imgs[0].shape)
+            if self.verbose is True:
+                self.__show_output_img_list(output_imgs)
+                # self.__show_output_img_list(self.labels)
+            if save is True:
+                torchvision.utils.save_image(output_imgs, os.path.join(self.save_path, f'all_imgs/all_imgs_{epoch}.jpg'), nrow=self.nrow, padding=10)
+                torchvision.utils.save_image(input_imgs, os.path.join(self.save_path, f'all_imgs/all_inputs_{epoch}.jpg'), nrow=self.nrow, padding=10)
+            del output_imgs
+        else:
+            pass
         return self
 
     def __show_output_img_list(self, output_imgs):

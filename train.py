@@ -34,7 +34,7 @@ if __name__ == '__main__':
     params = list(model.parameters())
     optim = torch.optim.Adam(params=params, lr=1e-3)
     ckpt_callbacks = ModelCheckPoint('ckpt', 'sr', mkdir=True, partience=1, verbose=True)
-    draw_callbacks = Draw_Output(os.path.join(data_path, 'draw_patch'), 'show_output', shape=(256, 256))
+    draw_callbacks = Draw_Output(os.path.join(data_path, 'draw'), 'show_output', partience=2, shape=(256, 256))
     callbacks = [ckpt_callbacks, draw_callbacks]
     trainer = Trainer(model, criterion, optim, shape=(batch_size, 3, 64, 64), colab_flas=False, callbacks=callbacks)
     trainer.train(epochs, train_dataloader, test_dataloader)
