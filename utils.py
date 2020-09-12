@@ -217,18 +217,8 @@ class Draw_Output(object):
         ###########################################################
         # Draw Label Img
         ###########################################################
-        # labels = []
-        # for data in self.output_data:
-        #     label = self.input_transform(Image.open(os.path.join(self.img_path, data)).convert('RGB'))
-        #     labels.append(label)
-        labels = [self.label_transform(Image.open(os.path.join(self.img_path, data)).convert('RGB')) for data in self.output_data]
-        self.labels = torch.cat(labels).reshape(len(labels), *labels[0].shape)
-        labels_np = torchvision.utils.make_grid(self.labels, nrow=nrow, padding=10)
-        labels_np = labels_np.numpy()
-        self.labels_np = np.transpose(labels_np, (1, 2, 0))
-        del labels, labels_np
-        torchvision.utils.save_image(self.labels, os.path.join(save_path, f'labels.jpg'), nrow=nrow, padding=10)
-
+        self.__plot_input_and_label('input')
+        self.__plot_input_and_label('label')
 
     def callback(self, model, epoch, *args, **kwargs):
         if epoch % self.partience == 0:
@@ -237,38 +227,54 @@ class Draw_Output(object):
                 assert 'None save mode'
             device = kwargs['device']
             # self.epoch_save_path = os.path.join(self.save_path, f'epoch{epoch}')
-            input_imgs = []
             output_imgs = []
             for i, data in enumerate(self.output_data):
                 img = Image.open(os.path.join(self.img_path, data)).convert('RGB')
                 img = self.input_transform(img).unsqueeze(0).to(device)
                 with torch.no_grad():
                     output = model(img).squeeze().to('cpu')
-                input_imgs.append(img)
                 output_imgs.append(output)
-            input_imgs = torch.cat(input_imgs).reshape(len(input_imgs), *input_imgs[0].shape).squeeze().to('cpu')
-            print(input_imgs.shape)
             output_imgs = torch.cat(output_imgs).reshape(len(output_imgs), *output_imgs[0].shape)
             if self.verbose is True:
                 self.__show_output_img_list(output_imgs)
-                # self.__show_output_img_list(self.labels)
             if save is True:
                 torchvision.utils.save_image(output_imgs, os.path.join(self.save_path, f'all_imgs/all_imgs_{epoch}.jpg'), nrow=self.nrow, padding=10)
-                torchvision.utils.save_image(input_imgs, os.path.join(self.save_path, f'all_imgs/all_inputs_{epoch}.jpg'), nrow=self.nrow, padding=10)
             del output_imgs
         else:
             pass
         return self
 
+    def __plot_input_and_label(self, mode='input'):
+        if mode == 'input':
+            transform = self.input_transform
+        else:
+            transform = self.label_transform
+        datas = [transform(Image.open(os.path.join(self.img_path, data)).convert('RGB')) for data in self.output_data]
+        datas = torch.cat(datas).reshape(len(datas), *datas[0].shape)
+        datas_np = self.__trans_tensor2np(datas)
+        torchvision.utils.save_image(datas, os.path.join(self.save_path, f'{mode}.jpg'), nrow=self.nrow, padding=10)
+        if mode == 'input':
+            self.inputs_np = datas_np
+        else:
+            self.labels_np = datas_np
+        del datas, datas_np
+        return self
+
     def __show_output_img_list(self, output_imgs):
         plt.figure(figsize=(16, 9))
-        output_imgs_np = torchvision.utils.make_grid(output_imgs, nrow=self.nrow, padding=10)
-        output_imgs_np = output_imgs_np.numpy()
-        output_imgs_np = np.transpose(output_imgs_np, (1, 2, 0))
-        plt.subplot(1, 2, 1)
+        output_imgs_np = self.__trans_tensor2np(output_imgs)
+        plt.subplot(1, 3, 1)
+        plot_img(self.inputs_np, 'Input')
+        plt.subplot(1, 3, 2)
         plot_img(output_imgs_np, 'Predict')
-        plt.subplot(1, 2, 2)
+        plt.subplot(1, 3, 3)
         plot_img(self.labels_np, 'Label')
         plt.show()
         del output_imgs_np
         return self
+
+    def __trans_tensor2np(self, data):
+        np_data = torchvision.utils.make_grid(data, nrow=self.nrow, padding=10)
+        np_data = np_data.numpy()
+        np_data = np.transpose(np_data, (1, 2, 0))
+        return np_data
