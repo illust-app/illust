@@ -2,6 +2,7 @@
 
 
 import os
+import cv2
 import shutil
 import scipy.io
 import numpy as np
@@ -182,7 +183,7 @@ class ModelCheckPoint(object):
 
 class Draw_Output(object):
 
-    def __init__(self, img_path, output_data, save_path='output', verbose=False, nrow=8):
+    def __init__(self, img_path, output_data, save_path='output', verbose=False, nrow=8, **kwargs):
         '''
         Parameters
         ---
@@ -200,8 +201,9 @@ class Draw_Output(object):
         self.data_num = len(output_data)
         self.save_path = save_path
         self.verbose = verbose
+        self.shape = kwargs.get('shape', (256, 256))
         self.input_transform = torchvision.transforms.Compose([
-            torchvision.transforms.Resize((224, 224)),
+            torchvision.transforms.Resize((self.shape)),
             torchvision.transforms.ToTensor()
         ])
         self.output_transform = torchvision.transforms.ToPILImage()
@@ -219,10 +221,11 @@ class Draw_Output(object):
         ###########################################################
         # Draw Label Img
         ###########################################################
-        labels = []
-        for data in self.output_data:
-            label = self.input_transform(Image.open(os.path.join(self.img_path, data)).convert('RGB'))
-            labels.append(label)
+        # labels = []
+        # for data in self.output_data:
+        #     label = self.input_transform(Image.open(os.path.join(self.img_path, data)).convert('RGB'))
+        #     labels.append(label)
+        labels = [self.input_transform(Image.open(os.path.join(self.img_path, data)).convert('RGB')) for data in self.output_data]
         self.labels = torch.cat(labels).reshape(len(labels), *labels[0].shape)
         labels_np = torchvision.utils.make_grid(self.labels, nrow=nrow, padding=10)
         labels_np = labels_np.numpy()
@@ -232,21 +235,20 @@ class Draw_Output(object):
 
 
     def callback(self, model, epoch, *args, **kwargs):
-        if 'save' not in kwargs.keys():
+        save = kwargs.get('save')
+        if 'save' is None:
             assert 'None save mode'
-        else:
-            save = kwargs['save']
         device = kwargs['device']
         self.epoch_save_path = os.path.join(self.save_path, f'epoch{epoch}')
         os.makedirs(self.epoch_save_path, exist_ok=True)
         output_imgs = []
         # encoder.eval()
         # decoder.eval()
-        for i, data in enumerate(self.output_data):
-            img = self.input_transform(Image.open(os.path.join(self.img_path, data)).convert('L')).unsqueeze(0).to(device)
-            with torch.no_grad():
+        with torch.no_grad():
+            for i, data in enumerate(self.output_data):
+                img = self.input_transform(Image.open(os.path.join(self.img_path, data)).convert('L')).unsqueeze(0).to(device)
                 output = model(img).squeeze().to('cpu')
-            output_imgs.append(output)
+                output_imgs.append(output)
         output_imgs = torch.cat(output_imgs).reshape(len(output_imgs), *output_imgs[0].shape)
         if self.verbose is True:
             self.__show_output_img_list(output_imgs)
