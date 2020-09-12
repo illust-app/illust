@@ -14,7 +14,8 @@ class SRCNN(Base_Model):
         self.scale = kwargs.get('scale', 2)
         self.features = [input_ch] + features  # + [output_ch]
         self.layers = torch.nn.ModuleList([torch.nn.Conv2d(self.features[i], self.features[i + 1], kernel_size, stride, padding=kernel_size // 2) for i in range(len(self.features) - 1)])
-        self.factor_conv = torch.nn.Conv2d(self.features[-1], self.features[-1] * self.scale ** 2, kernel_size=3, padding=kernel_size // 2)
+        self.res_conv = torch.nn.Conv2d(self.features[-1], output_ch, kernel_size, stride, padding=kernel_size // 2)
+        self.factor_conv = torch.nn.Conv2d(output_ch, self.features[-1] * self.scale ** 2, kernel_size=3, padding=kernel_size // 2)
         if self.scale == 4:
             self.up_factor = torch.nn.Sequential(*[torch.nn.PixelShuffle(2), torch.nn.PixelShuffle(2)])
         elif self.scale == 8:
@@ -37,6 +38,8 @@ class SRCNN(Base_Model):
             else:
                 x_in = self.activation[self.activation_name](x_in)
             # x_in = x_in + x
+        # x_in = x + x_in
+        x_in = self.res_conv(x_in) + x
         x_in = self.factor_conv(x_in)
         x_in = self.up_factor(x_in)
         x = self.output_conv(x_in)
