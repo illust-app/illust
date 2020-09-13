@@ -1,28 +1,38 @@
 # coding: UTF-8
 
 
+import numpy as np
 import torch
 from torchsummary import summary
-from .layers import Base_Model
+from .layers import Base_Model, Conv2d_Shuffle
 
 
 class SRCNN(Base_Model):
 
     def __init__(self, input_ch, output_ch, kernel_size=3, stride=1, features=[32, 64, 64], **kwargs):
-        super(SRCNN, self).__init__(input_ch, output_ch)
+        super(SRCNN, self).__init__()
         self.activation_name = kwargs.get('activation')
         self.scale = kwargs.get('scale', 2)
         self.features = [input_ch] + features  # + [output_ch]
         self.layers = torch.nn.ModuleList([torch.nn.Conv2d(self.features[i], self.features[i + 1], kernel_size, stride, padding=kernel_size // 2) for i in range(len(self.features) - 1)])
         self.res_conv = torch.nn.Conv2d(self.features[-1], output_ch, kernel_size, stride, padding=kernel_size // 2)
-        self.factor_conv = torch.nn.Conv2d(output_ch, self.features[-1] * self.scale ** 2, kernel_size=3, padding=kernel_size // 2)
-        if self.scale == 4:
-            self.up_factor = torch.nn.Sequential(*[torch.nn.PixelShuffle(2), torch.nn.PixelShuffle(2)])
-        elif self.scale == 8:
-            self.up_factor = torch.nn.Sequential(*[torch.nn.PixelShuffle(2), torch.nn.PixelShuffle(2), torch.nn.PixelShuffle(2)])
-        else:
-            self.up_factor = torch.nn.PixelShuffle(self.scale)
-        # self.output_conv = torch.nn.ConvTranspose2d(features[-1], output_ch, kernel_size=2, stride=2)
+        self.factor_conv = torch.nn.Conv2d(output_ch, self.features[-1], kernel_size=3, padding=kernel_size // 2)
+        self.up_factor = torch.nn.ModuleList([Conv2d_Shuffle(self.features[-1], scale=scale) for _ in range(int(np.log2(scale))))
+        # if self.scale == 5:
+        #     self.up_factor = torch.nn.Sequential(*[torch.nn.Conv2d(self.features[-1], self.features[-1] * 2 ** 2, 3, 1, 1),
+        #                                            torch.nn.PixelShuffle(2),
+        #                                            torch.nn.Conv2d(self.features[-1], self.features[-1] * 2 ** 2, 3, 1, 1),
+        #                                            torch.nn.PixelShuffle(2)])
+        # elif self.scale == 8:
+        #     self.up_factor = torch.nn.Sequential(*[torch.nn.Conv2d(self.features[-1], self.features[-1] * 2 ** 2, 3, 1, 1),
+        #                                            torch.nn.PixelShuffle(2),
+        #                                            torch.nn.Conv2d(self.features[-1], self.features[-1] * 2 ** 2, 3, 1, 1),
+        #                                            torch.nn.PixelShuffle(2),
+        #                                            torch.nn.Conv2d(self.features[-1], self.features[-1] * 2 ** 2, 3, 1, 1),
+        #                                            torch.nn.PixelShuffle(2)])
+        # else:
+        #     self.up_factor = torch.nn.PixelShuffle(self.scale)
+        # # self.output_conv = torch.nn.ConvTranspose2d(features[-1], output_ch, kernel_size=2, stride=2)
         self.output_conv = torch.nn.Conv2d(self.features[-1], output_ch, kernel_size, stride=stride, padding=kernel_size // 2)
 
     def forward(self, x):
@@ -41,7 +51,9 @@ class SRCNN(Base_Model):
         # x_in = x + x_in
         x_in = self.res_conv(x_in) + x
         x_in = self.factor_conv(x_in)
-        x_in = self.up_factor(x_in)
+        # x_in = self.up_factor(x_in)
+        for factor in self.up_factor:
+            x_in = factor(x_in)
         x = self.output_conv(x_in)
         return x
 

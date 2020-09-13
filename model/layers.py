@@ -37,13 +37,14 @@ class FReLU(torch.nn.Module):
 
 class Base_Model(torch.nn.Module):
 
-    def __init__(self, input_ch, output_ch):
+    def __init__(self):
         super(Base_Model, self).__init__()
         self.activation = {None   : torch.nn.Identity(),
                            'relu' : torch.nn.ReLU(),
                            'leaky': torch.nn.LeakyReLU(),
                            'swish': Swish(),
-                           'frelu': FReLU(input_ch, output_ch)}
+                           'mish' : Mish()}
+                           # 'frelu': FReLU(input_ch, output_ch)}
 
 
 class Conv_Block(torch.nn.Module):
@@ -184,8 +185,8 @@ class DW_PT_Conv(torch.nn.Module):
 class EDSR_Block(Base_Model):
 
     def __init__(self, input_ch, output_ch, feature, **kwargs):
-        super(Base_Model, self).__init__()
-        self.activation_fn = kwargs('activation')
+        super(EDSR_Block, self).__init__()
+        self.activation_fn = kwargs.get('activation')
         self.conv1 = torch.nn.Conv2d(input_ch, feature, kernel_size=3, stride=1, padding=1)
         self.conv2 = torch.nn.Conv2d(feature, output_ch, kernel_size=3, stride=1, padding=1)
 
@@ -194,3 +195,15 @@ class EDSR_Block(Base_Model):
         x_in = self.activation[self.activation_fn](self.conv1(x_in))
         x_in = self.conv2(x_in)
         return x + x_in
+
+class Conv2d_Shuffle(Base_Model):
+
+    def __init__(self, feature, scale, **kwargs):
+        super(Conv2d_Shuffle, self).__init__()
+        self.conv = torch.nn.Conv2d(feature, feature * scale ** 2, 3, 1, 1)
+        self.pixel_shuffle = torch.nn.PixelShuffle(scale)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.pixel_shuffle(x)
+        return x
