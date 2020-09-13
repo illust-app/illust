@@ -1,6 +1,7 @@
 # coding: utf-8
 
 
+import numpy as np
 import torch
 
 
@@ -200,10 +201,15 @@ class Conv2d_Shuffle(Base_Model):
 
     def __init__(self, feature, scale, **kwargs):
         super(Conv2d_Shuffle, self).__init__()
-        self.conv = torch.nn.Conv2d(feature, feature * scale ** 2, 3, 1, 1)
-        self.pixel_shuffle = torch.nn.PixelShuffle(scale)
+        if scale % 2 == 0:
+            self.conv = torch.nn.ModuleList([torch.nn.Conv2d(feature, feature * 2 ** 2, 3, 1, 1) for _ in range(int(np.log2(scale)))])
+            self.pixel_shuffle = torch.nn.ModuleList([torch.nn.PixelShuffle(2) for _ in range(int(np.log2(scale)))])
+        else:
+            self.conv = [torch.nn.Conv2d(feature, feature * scale ** 2, 3, 1, 1)]
+            self.pixel_shuffle = [torch.nn.PixelShuffle(scale)]
 
     def forward(self, x):
-        x = self.conv(x)
-        x = self.pixel_shuffle(x)
+        for conv, pixel_shuffle in zip(self.conv, self.pixel_shuffle):
+            x = conv(x)
+            x = pixel_shuffle(x)
         return x

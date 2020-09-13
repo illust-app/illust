@@ -195,6 +195,7 @@ class Draw_Output(object):
         self.scale = kwargs.get('scale', 2)
         self.zeros = torch.zeros((self.data_num, 3, self.shape[0], self.shape[1]))
         self.ones = torch.ones((self.data_num, 3, self.shape[0], self.shape[1]))
+        print(self.shape, self.zeros.shape, self.ones.shape)
         self.label_transform = torchvision.transforms.Compose([
             torchvision.transforms.CenterCrop(self.shape),
             torchvision.transforms.ToTensor()

@@ -20,7 +20,8 @@ class EDSR(torch.nn.Module):
         #     self.up_factor = torch.nn.Sequential(torch.nn.Conv2d(feature, feature * 3 ** 2, 3, 1, 1), torch.nn.PixelShuffle(3))
         # else:
         # self.up_factor = torch.nn.ModuleList([[*torch.nn.Sequential(torch.nn.Conv2d(feature, feature * scale ** 2, 3, 1, 1), torch.nn.PixelShuffle(int(np.log2(scale))))] for _ in range(int(np.log2(scale)))])
-        self.up_factor = torch.nn.ModuleList([Conv2d_Shuffle(feature, scale) for _ in range(int(np.log2(scale)))])
+        # self.up_factor = torch.nn.ModuleList([Conv2d_Shuffle(feature, scale) for _ in range(int(np.log2(scale)))])
+        self.up_factor = Conv2d_Shuffle(feature, scale)
         self.output_conv = torch.nn.Conv2d(feature, output_ch, 3, 1, 1)
 
     def forward(self, x):
@@ -31,7 +32,7 @@ class EDSR(torch.nn.Module):
         x = self.res_conv(x_in) + x
         x = self.factor_conv(x)
         # x = self.up_factor(x)
-        for factor in self.up_factor:
-            x = factor(x)
+        # for factor in self.up_factor:
+        x = self.up_factor(x)
         x = self.output_conv(x)
         return x
