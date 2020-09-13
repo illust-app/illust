@@ -77,7 +77,6 @@ def make_patch(data_path, save_path, size=256, ch=24, data_key='data'):
     data_list = os.listdir(data_path)
     for i, name in enumerate(tqdm(data_list, ascii=True)):
         idx = name.split('.')[0]
-        # f = scipy.io.loadmat(os.path.join(data_path, name))
         data = Image.open(os.path.join(data_path, name))
         data = np.expand_dims(np.asarray(
             data, np.float32).transpose([2, 0, 1]), axis=0)
@@ -87,6 +86,8 @@ def make_patch(data_path, save_path, size=256, ch=24, data_key='data'):
         patch_data = patch_data.permute(
             (0, 2, 3, 1, 4, 5)).reshape(-1, ch, size, size)
         for i in range(patch_data.size()[0]):
+            if patch_data[i].sum == 0:
+                pass
             save_data = patch_data[i].to('cpu').detach().numpy().copy().transpose(1, 2, 0).astype(np.uint8)
             save_name = os.path.join(save_path, f'{idx}_{i}.png')
             save_img = Image.fromarray(save_data)
