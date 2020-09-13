@@ -17,7 +17,7 @@ class SRCNN(Base_Model):
         self.layers = torch.nn.ModuleList([torch.nn.Conv2d(self.features[i], self.features[i + 1], kernel_size, stride, padding=kernel_size // 2) for i in range(len(self.features) - 1)])
         self.res_conv = torch.nn.Conv2d(self.features[-1], output_ch, kernel_size, stride, padding=kernel_size // 2)
         self.factor_conv = torch.nn.Conv2d(output_ch, self.features[-1], kernel_size=3, padding=kernel_size // 2)
-        self.up_factor = torch.nn.ModuleList([Conv2d_Shuffle(self.features[-1], scale=scale) for _ in range(int(np.log2(scale))))
+        self.up_factor = torch.nn.ModuleList([Conv2d_Shuffle(self.features[-1], scale=self.scale) for _ in range(int(np.log2(self.scale)))])
         # if self.scale == 5:
         #     self.up_factor = torch.nn.Sequential(*[torch.nn.Conv2d(self.features[-1], self.features[-1] * 2 ** 2, 3, 1, 1),
         #                                            torch.nn.PixelShuffle(2),
