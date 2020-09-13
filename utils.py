@@ -272,11 +272,9 @@ class Draw_Output(object):
     def __show_output_img_list(self, output_imgs):
         plt.figure(figsize=(16, 9))
         output_imgs_np = self.__trans_tensor2np(output_imgs)
-        plt.subplot(1, 3, 1)
-        plot_img(self.inputs_np, 'Input')
-        plt.subplot(1, 3, 2)
+        plt.subplot(1, 2, 1)
         plot_img(output_imgs_np, 'Predict')
-        plt.subplot(1, 3, 3)
+        plt.subplot(1, 2, 2)
         plot_img(self.labels_np, 'Label')
         plt.show()
         del output_imgs_np
