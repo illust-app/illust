@@ -54,7 +54,11 @@ def pxdog(img, size, p, sigma, eps, phi, k=1.6):
 
 
 def normalize(x):
-    return (x - x.min()) / (x.max() - x.min())
+    if x.min() == x.max():
+        x = 0
+    else:
+        x = (x - x.min()) / (x.max() - x.min())
+    return x
 
 
 def move_data(data_path, data_list, save_path):
