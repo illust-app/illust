@@ -128,6 +128,8 @@ class Trainer(object):
 
     def _cut(self, x):
         bs, _, _, _ = x.size()
-        x = torch.where(x > 1., self.ones[:bs], x)
-        x = torch.where(x < 0., self.zeros[:bs], x)
+        # x = torch.where(x > 1., self.ones[:bs], x)
+        # x = torch.where(x < 0., self.zeros[:bs], x)
+        x = torch.max(x, self.zeros[:bs])
+        x = torch.min(x, self.ones[:bs])
         return x
