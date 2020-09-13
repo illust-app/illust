@@ -6,6 +6,7 @@ import torch
 from torchsummary import summary
 from data_loader import SRDataset
 from model.SRCNN import SRCNN
+from model.EDSR import EDSR
 from trainer import Trainer
 from utils import Draw_Output, ModelCheckPoint
 
@@ -28,7 +29,8 @@ if __name__ == '__main__':
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_dataset = SRDataset(test_data_path)
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
-    model = SRCNN(3, 3, features=[32, 64, 128, 256, 128, 64, 32], activation='frelu').to(device)
+    # model = SRCNN(3, 3, features=[32, 64, 128, 256, 128, 64, 32], activation='frelu').to(device)
+    model = EDSR(3, 3, block_num=6, activation='relu', scale=2).to(device)
     summary(model, (3, 64, 64))
     criterion = torch.nn.MSELoss().to(device)
     params = list(model.parameters())
