@@ -86,9 +86,8 @@ def make_patch(data_path, save_path, size=256, ch=24, data_key='data'):
         patch_data = patch_data.permute(
             (0, 2, 3, 1, 4, 5)).reshape(-1, ch, size, size)
         for i in range(patch_data.size()[0]):
-            print(np.prod(list(patch_data[i].shape)))
-            if patch_data[i].sum == 0 or patch_data[i].sum == np.prod(list(patch_data[i].shape)):
-                pass
+            if patch_data[i].sum() == 0 or patch_data[i].sum() == np.prod(list(patch_data[i].shape)):
+                continue
             save_data = patch_data[i].to('cpu').detach().numpy().copy().transpose(1, 2, 0).astype(np.uint8)
             save_name = os.path.join(save_path, f'{idx}_{i}.png')
             save_img = Image.fromarray(save_data)
