@@ -4,7 +4,7 @@
 import numpy as np
 import torch
 from torchsummary import summary
-from layers import Base_Model, Conv2d_Shuffle
+from .layers import Base_Model, Conv2d_Shuffle
 
 
 class SRCNN(Base_Model):
