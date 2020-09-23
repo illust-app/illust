@@ -69,6 +69,7 @@ class SRCNNDataset(SRDataset):
         input_data = img.resize((h // self.scale, w // self.scale))
         input_data = img.resize((h * self.scale, w * self.scale))
         '''
-        input_data = torch.nn.functional.adaptive_avg_pool2d(input_data, (h // self.scale, w // self.scale))
+        input_data = nd_data.unsqueeze(0)
+        input_data = torch.nn.functional.adaptive_avg_pool2d(input_data, (h // self.scale, w // self.scale)).squeeze()
         input_data = torch.nn.functional.interpolate(input_data, (h * self.scale, w * self.scale), mode='bicubic', align_corners=False)
         return input_data, label_data
