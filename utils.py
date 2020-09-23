@@ -23,6 +23,7 @@ def DoG(img,size, sigma, k=1.6, gamma=1):
     g2 = cv2.GaussianBlur(img, (size, size), sigma*k)
     return g1 - gamma*g2
 
+
 # 閾値で白黒化するDoG
 def thres_dog(img, size, sigma, eps, k=1.6, gamma=0.98):
     d = DoG(img,size, sigma, k, gamma)
@@ -30,6 +31,7 @@ def thres_dog(img, size, sigma, eps, k=1.6, gamma=0.98):
     d *= 255
     d = np.where(d >= eps, 255, 0)
     return d
+
 
 # 拡張ガウシアン差分フィルタリング
 def xdog(img, size, sigma, eps, phi, k=1.6, gamma=0.98):
@@ -39,6 +41,7 @@ def xdog(img, size, sigma, eps, phi, k=1.6, gamma=0.98):
     e = 1 + np.tanh(phi*(d-eps))
     e[e>=1] = 1
     return e
+
 
 # シャープネス値pを使う方
 def pxdog(img, size, p, sigma, eps, phi, k=1.6):
