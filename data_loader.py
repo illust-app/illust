@@ -63,9 +63,12 @@ class SRCNNDataset(SRDataset):
         else:
             nd_data = self.to_tensor(nd_data)
         label_data = nd_data
+        '''
         img = nd_data.detach().numpy().astype(np.uint8).transpose(1, 2, 0)
         img = Image.fromarray(img)
         input_data = img.resize((h // self.scale, w // self.scale))
         input_data = img.resize((h * self.scale, w * self.scale))
-        input_data = self.to_tensor(np.array(input_data, dtype=np.float32))
+        '''
+        input_data = torch.nn.functional.adaptive_avg_pool2d(input_data, (h // self.scale, w // self.scale))
+        input_data = torch.nn.functional.interpolate(input_data, (h * self.scale, w * self.scale), mode='bicubic', align_corners=False)
         return input_data, label_data
