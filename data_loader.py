@@ -48,3 +48,24 @@ class SRDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return self.data_len
+
+
+class SRCNNDataset(SRDataset):
+
+    def __getitem__(self, idx):
+        img_name = os.path.join(self.img_path, self.data[idx])
+        img = Image.open(img_name).convert('RGB')
+        nd_data = np.array(img, dtype=np.float32).copy()
+        h, w, ch = nd_data.shape
+        if self.transforms is not None:
+            for transform in self.transforms:
+                nd_data = transform(nd_data)
+        else:
+            nd_data = self.to_tensor(nd_data)
+        label_data = nd_data
+        img = nd_data.detach().numpy().astype(np.uint8).transpose(1, 2, 0)
+        img = Image.fromarray(img)
+        input_data = img.resize((h // self.scale, w // self.scale))
+        input_data = img.resize((h * self.scale, w * self.scale))
+        input_data = self.to_tensor(np.array(input_data, dtype=np.float32))
+        return input_data, label_data
